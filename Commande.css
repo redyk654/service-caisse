@@ -20,6 +20,7 @@
     background-color: #0e771a;
     color: #f1f1f1;
     width: 100%;
+    text-align: center;
 }
 
 .commande .left-side {
@@ -60,6 +61,7 @@
     color: #0e771a;
     font-weight: 600;
     width: 100%;
+    line-height: 30px;
 }
 
 .commande .left-side .liste-medoc ul li:hover {
