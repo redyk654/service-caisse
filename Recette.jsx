@@ -18,7 +18,7 @@ export default class Facture extends Component {
                     <div>date <strong>{(new Date().toLocaleDateString())}</strong> heure <strong>{(new Date().getHours() + 'h' + new Date().getMinutes() + 'min')}</strong></div>
                     <div style={styles}>
                         <div>recette du jour</div>
-                        <div>{this.props.recette + ' Fcfa'}</div>
+                        <div>{this.props.recette ? this.props.recette + ' Fcfa' : '0 Fcfa'}</div>
                     </div>
                 </div>
             </div>

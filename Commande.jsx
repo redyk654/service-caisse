@@ -192,6 +192,18 @@ export default function Commande(props) {
     }, [medocCommandes, frais]);
 
     useEffect(() => {
+        // Etat d'urgence entre 17h et 8h
+        const d = new Date();
+
+        if ( d.getHours() >= 17 || d.getHours() <= 7 || (d.getDay() === 0 || d.getDay() === 6) ) {
+            setUrgence(true);
+        } else {
+            setUrgence(false);
+        }
+
+    }, [actualiserQte]);
+
+    useEffect(() => {
         // Pour mettre à jour le relicat et le reste à payer
         if (montantVerse >= parseInt(qtePrixTotal.a_payer)) {
             setrelicat(montantVerse - parseInt(qtePrixTotal.a_payer));
@@ -203,20 +215,10 @@ export default function Commande(props) {
             }
         }
 
-    }, [montantVerse, medocCommandes, frais]);
+    }, [montantVerse, medocCommandes, frais, reduction]);
 
     // permet de récolter les informations sur le médicament sélectioné
     const afficherInfos = (e) => {
-
-        const d = new Date();
-
-        // Etat d'urgence entre 15h30 et 17h 
-        if ( d.getHours() >= 15 && d.getHours() <= 17 && d.getMinutes() >= 30 || (d.getDay() === 0 || d.getDay() === 6) ) {
-            setUrgence(true);
-        } else {
-            setUrgence(false);
-        }
-
         const medocSelectionne = listeMedoc.filter(item => (item.id == e.target.value));
         setMedoSelect(medocSelectionne);
         setQteDesire(1);
@@ -272,7 +274,7 @@ export default function Commande(props) {
 
     const sauvegarder = () => {
         const req = new XMLHttpRequest();
-        req.open('POST', 'http://192.168.1.12/backend-cma/backup.php');
+        req.open('POST', 'http://localhost/backend-cma/backup.php');
         req.send();
     }
 
@@ -299,6 +301,7 @@ export default function Commande(props) {
         data.append('prix_total', qtePrixTotal.prix_total);
         data.append('remise', remise);
         data.append('a_payer', qtePrixTotal.a_payer);
+        console.log(qtePrixTotal.a_payer);
         data.append('montant_verse', montantVerse);
         data.append('relicat', relicat);
         data.append('reste_a_payer', resteaPayer);
@@ -378,8 +381,13 @@ export default function Commande(props) {
                 nomPatient && data2.append('patient', nomPatient);
                 data2.append('id_facture', id);
                 data2.append('designation', item.designation);
+                if (remise) {
+                    item.prix = parseInt(item.prix) * (parseInt(remise) / 100);
+                }
+                console.log(item.prix);
                 data2.append('prix_total', item.prix);
                 data2.append('caissier', props.nomConnecte);
+                data2.append('reduction', remise);
 
                 // Envoi des données
                 const req2 = new XMLHttpRequest();
@@ -518,6 +526,19 @@ export default function Commande(props) {
                             <input type="text" value={prix} onChange={handleChange} name='prix' autoComplete='off' />
                         </p>
                         <p style={styleBox}>
+                            <label htmlFor="categorie">Catégorie</label>
+                            <select name="categorie" id="categorie" onChange={(e) => setAutreState({...autreState, 'designation': e.target.value + ' ' + designation})}>
+                                <option value="MA">maternité</option>
+                                <option value="RX">radiologie</option>
+                                <option value="LAB">laboratoire</option>
+                                <option value="ECHO">echographie</option>
+                                <option value="MED">médécine</option>
+                                <option value="CHR">petite chirurgie</option>
+                                <option value="UPEC">upec</option>
+                                <option value="CO">consultation</option>
+                            </select>
+                        </p>
+                        <p style={styleBox}>
                             <button style={{width: '20%', cursor: 'pointer'}} onClick={ajouterService}>OK</button>
                         </p>
                     </div>
@@ -527,7 +548,7 @@ export default function Commande(props) {
     }
 
     const ajouterService = () => {
-        if (designation.length > 0 && prix.length > 0) {
+        if (designation.length > 0 && prix.length > 0 && !isNaN(prix)) {
             autreState.id = Math.random().toString();
             setMedocCommandes([...medocCommandes, autreState])
             fermerModalPatient();
@@ -547,6 +568,7 @@ export default function Commande(props) {
     const fermerModalPatient = () => {
         setModalPatient(false);
         setpatient('');
+        setAutreState(autre);
     }
 
     const fermerModalConfirmation = () => {
@@ -600,12 +622,8 @@ export default function Commande(props) {
                 <p className="search-zone">
                     <input type="text" placeholder="recherchez un service" onChange={filtrerListe} autoComplete='off' />
                 </p>
-                <div>
-                    <button style={styleBtnAutre} onClick={autreService}>Autres services</button>
-                </div>
-
                 <div className="liste-medoc">
-                    <h1>Services médicaux</h1>
+                    <h1>Services</h1>
                     <ul>
                         {chargement ? <div className="loader"><Loader type="Circles" color="#0e771a" height={100} width={100}/></div> : listeMedoc.map(item => (
                             <li value={item.id} key={item.id} onClick={afficherInfos} style={{color: `${parseInt(item.en_stock) < parseInt(item.min_rec) ? 'red' : ''}`}}>{item.designation}</li>
@@ -648,7 +666,7 @@ export default function Commande(props) {
                     <div style={{textAlign: 'center'}}>
                         {nomPatient ? (
                             <div>
-                                Nom et prénom: <span style={{color: '#0e771a', fontWeight: '700'}}>{nomPatient.toLocaleUpperCase()}</span>
+                                Patient: <span style={{color: '#0e771a', fontWeight: '700'}}>{nomPatient.toLocaleUpperCase()}</span>
                             </div>
                         ) : null}
                         <label htmlFor="">Montant versé : </label>
@@ -660,7 +678,7 @@ export default function Commande(props) {
                 <div className='erreur-message'>{messageErreur}</div>
 
                 <div className="details-commande">
-                    <h1>Services sélectionnés</h1>
+                    <h1>Facture en cours</h1>
 
                     <table>
                         <thead>
@@ -707,13 +725,13 @@ export default function Commande(props) {
 
                     <div>
                         <div style={{display: 'none'}}>
-                            <Facture 
+                            <Facture
                                 ref={componentRef}
                                 medocCommandes={medocCommandes}
                                 idFacture={idFacture}
                                 patient={nomPatient}
                                 prixTotal={qtePrixTotal.prix_total}
-                                reduction={reduction}
+                                reduction={remise}
                                 aPayer={qtePrixTotal.a_payer}
                                 montantVerse={montantVerse}
                                 relicat={relicat}

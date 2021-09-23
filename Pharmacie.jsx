@@ -1,20 +1,8 @@
-import React, { useEffect, useState, useRef } from 'react';
-import Facture from '../Facture/Facture';
-import './GestionFactures.css';
+import React, { useEffect, useState, useRef, Fragment } from 'react';
+import FacturePharmacie from './FacturePharmacie';
+import './Pharmacie.css';
 import ReactToPrint from 'react-to-print';
 import Modal from 'react-modal';
-
-const customStyles2 = {
-    content: {
-        top: '50%',
-        left: '50%',
-        right: 'auto',
-        bottom: 'auto',
-        marginRight: '-50%',
-        transform: 'translate(-50%, -50%)',
-        background: '#0e771a',
-      },
-};
 
 const customStyles1 = {
     content: {
@@ -25,6 +13,18 @@ const customStyles1 = {
       marginRight: '-50%',
       transform: 'translate(-50%, -50%)',
       background: '#0e771a',
+    },
+};
+
+const customStyles2 = {
+    content: {
+        top: '50%',
+        left: '50%',
+        right: 'auto',
+        bottom: 'auto',
+        marginRight: '-50%',
+        transform: 'translate(-50%, -50%)',
+        background: '#0e771a',
     },
 };
 
@@ -48,9 +48,8 @@ const table_styles = {
     padding: 10,
     width: '50%',
     marginTop: '15px',
-    fontSize: '15px'
+    fontSize: '15px',
 }
-
 
 export default function GestionFactures(props) {
 
@@ -72,15 +71,14 @@ export default function GestionFactures(props) {
     const [modalReussi, setModalReussi] = useState(false);
     const [modalConfirmation, setModalConfirmation] = useState(false);
 
-
     useEffect(() => {
         setFactures([])
         setfactureSauvegarde([]);
         const req = new XMLHttpRequest();
         if (filtrer) {
-            req.open('GET', 'http://localhost/backend-cma/gestion_factures.php?filtrer=oui');
+            req.open('GET', 'http://localhost/backend-cma/factures_pharmacie.php?filtrer=oui');
             const req2 = new XMLHttpRequest();
-            req2.open('GET', 'http://localhost/backend-cma/gestion_factures.php?filtrer=oui&manquant');
+            req2.open('GET', 'http://localhost/backend-cma/factures_pharmacie.php?filtrer=oui&manquant');
             req2.addEventListener('load', () => {
                 const result = JSON.parse(req2.responseText);
                 setManquantTotal(result[0].manquant);
@@ -88,7 +86,7 @@ export default function GestionFactures(props) {
             req2.send();
 
         } else {
-            req.open('GET', 'http://localhost/backend-cma/gestion_factures.php');
+            req.open('GET', 'http://localhost/backend-cma/factures_pharmacie.php');
         }
         req.addEventListener("load", () => {
             if (req.status >= 200 && req.status < 400) { // Le serveur a réussi à traiter la requête
@@ -113,18 +111,17 @@ export default function GestionFactures(props) {
         if (factureSelectionne.length > 0) {
             const req = new XMLHttpRequest();
     
-            req.open('GET', `http://localhost/backend-cma/gestion_factures.php?id=${factureSelectionne[0].id}`);
+            req.open('GET', `http://localhost/backend-cma/factures_pharmacie.php?id=${factureSelectionne[0].id}`);
     
             req.addEventListener('load', () => {
                 const result = JSON.parse(req.responseText);
                 setdetailsFacture(result);
-                fermerModalConfirmation();
             });
 
-            req.send()
+            req.send();
         }
 
-    }, [effet2])
+    }, [effet2]);
 
     const afficherInfos = (e) => {
         // Affichage des informations de la facture selectionnée
@@ -160,13 +157,30 @@ export default function GestionFactures(props) {
             data.append('montant_verse', newMontantVerse);
             data.append('reste_a_payer', resteaPayer);
             data.append('relicat', relicat);
+            data.append('caissier', props.nomConnecte);
 
             const req = new XMLHttpRequest();
-            req.open('POST', 'http://localhost/backend-cma/gestion_factures.php')
+            req.open('POST', 'http://localhost/backend-cma/factures_pharmacie.php')
 
             req.addEventListener('load', () => {
-                setSupp(false);
-                setModalReussi(true);
+                // Mise à jour des stocks des médicaments vendus
+                detailsFacture.map(item => {
+                    const data1 = new FormData();
+                    data1.append('qte', item.quantite);
+                    data1.append('id_produit', item.id_prod);
+
+                    const req1 = new XMLHttpRequest();
+                    req1.open('POST', 'http://localhost/backend-cma/maj_medocs.php');
+
+                    req1.addEventListener("load", function () {
+                        if (req1.status >= 200 && req1.status < 400) {
+                            setSupp(false);
+                            setModalReussi(true);
+                        }
+                    });
+
+                    req1.send(data1);
+                });
             });
 
             req.send(data);
@@ -180,28 +194,25 @@ export default function GestionFactures(props) {
      }
 
     const filtrerListe = (e) => {
+        // const medocFilter = factureSauvegarde.filter(item => (item.id.indexOf(e.target.value) !== -1));
         setFactures(factureSauvegarde.filter(item => (item.id.indexOf(e.target.value) !== -1)));
     }
 
     const supprimerFacture = () => {
+        // Suppression d'une facture
         document.querySelector('.valider').disabled = true;
         document.querySelector('.supp').disabled = true;
-        // Suppression d'une facture
-        const data = new FormData();
-        data.append('id', factureSelectionne[0].id);
 
-        const req = new XMLHttpRequest();
-        req.open('POST', 'http://localhost/backend-cma/supprimer_facture.php');
-        
-        req.addEventListener('load', () => {
-            if (req.status >= 200 && req.status < 400) {
-                setModalConfirmation(false);
-                setSupp(true);
-                setModalReussi(true);
-            }
+        const req2 = new XMLHttpRequest();
+        req2.open('GET', `http://localhost/backend-cma/supprimer_facture.php?id=${factureSelectionne[0].id}`);
+        req2.addEventListener('load', () => {
+            fermerModalConfirmation();
+            setSupp(true);
+            setModalReussi(true);
         });
 
-        req.send(data);
+        req2.send();
+
     }
 
     const fermerModalReussi = () => {
@@ -249,27 +260,31 @@ export default function GestionFactures(props) {
     return (
         <div className="container-facture">
             <Modal
-                isOpen={modalConfirmation}
-                style={customStyles1}
-                contentLabel="validation commande"
-            >
-                <h2 style={{color: '#fff'}}>Annuler une facture entraine sa suppression. Voulez-vous continuer ?</h2>
-                <div style={{textAlign: 'center'}} className='modal-button'>
-                    <button className="supp" style={{width: '20%', height: '5vh', cursor: 'pointer', marginRight: '10px'}} onClick={fermerModalConfirmation}>NON</button>
-                    <button className="valider" style={{width: '20%', height: '5vh', cursor: 'pointer'}} onClick={supprimerFacture}>OUI</button>
-                </div>
-            </Modal>
-            <Modal
                 isOpen={modalReussi}
                 style={customStyles2}
                 contentLabel="Commande réussie"
             >
                 {
                     supp ? 
-                    (<h2 style={{color: '#fff'}}>Facture supprimé ✔ !</h2>) :
-                    (<h2 style={{color: '#fff'}}>Service effectué !</h2>)
+                    (<h2 style={{color: '#fff',}}>Facture supprimé ✔ !</h2>) :
+                    (
+                    <Fragment>
+                        <h2 style={{color: '#fff', marginBottom: '5px'}}>Facture réglé !</h2>
+                    </Fragment>
+                    )
                 }
-                <button style={{width: '30%', height: '5vh', cursor: 'pointer', marginRight: '15px', fontSize: 'large'}} onClick={fermerModalReussi}>Fermer</button>
+                <button style={{width: '45%', height: '5vh', cursor: 'pointer', fontSize: 'large'}} onClick={fermerModalReussi}>Fermer</button>
+            </Modal>
+            <Modal
+                isOpen={modalConfirmation}
+                style={customStyles1}
+                contentLabel="validation commande"
+            >
+                <h2 style={{color: '#fff'}}>Annuler une facture entraine sa suppression. Voulez-vous continuer ?</h2>
+                <div style={{textAlign: 'center'}} className='modal-button'>
+                    <button className='supp' style={{width: '20%', height: '5vh', cursor: 'pointer', marginRight: '10px'}} onClick={fermerModalConfirmation}>NON</button>
+                    <button className="valider" style={{width: '20%', height: '5vh', cursor: 'pointer'}} onClick={supprimerFacture}>OUI</button>
+                </div>
             </Modal>
             <div className="liste-medoc">
 
@@ -283,7 +298,7 @@ export default function GestionFactures(props) {
                 <div>
                     {filtrer ? (
                         <div>Total non réglés: <span style={{fontWeight: 700}}>{manquantTotal == null ? '0 Fcfa' : manquantTotal + ' Fcfa'}</span></div>
-                        ) : null}
+                    ) : null}
                 </div>
                 <h3>{filtrer ? 'Factures non réglés' : 'Factures'}</h3>
                 <ul>
@@ -299,19 +314,23 @@ export default function GestionFactures(props) {
                         <div>Facture N°<span style={{color: '#0e771a', fontWeight: 700}}>{factureSelectionne.length > 0 && factureSelectionne[0].id}</span></div>
                     </div>
                     <div>
-                        <div>Le <strong>{factureSelectionne.length > 0 && mois(factureSelectionne[0].date_heure.substring(0, 10))}</strong> à <strong>{factureSelectionne.length > 0 && factureSelectionne[0].date_heure.substring(11, )}</strong></div>
+                        <div>Le <strong>{factureSelectionne.length > 0 && mois(factureSelectionne[0].date_heure.substring(0, 11))}</strong> à <strong>{factureSelectionne.length > 0 && factureSelectionne[0].date_heure.substring(11, )}</strong></div>
                     </div>
                     <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 20, width: '100%'}}>
                         <table style={table_styles}>
                             <thead>
                                 <th style={table_styles1}>Désignation</th>
-                                <th style={table_styles2}>Prix</th>
+                                <th style={table_styles2}>Pu</th>
+                                <th style={table_styles2}>Qte</th>
+                                <th style={table_styles2}>Total</th>
                             </thead>
                             <tbody>
                                 {detailsFacture.map(item => (
                                     <tr>
                                         <td style={table_styles1}>{item.designation}</td>
-                                        <td style={table_styles2}>{item.prix}</td>
+                                        <td style={table_styles2}>{parseInt(item.prix_total) / parseInt(item.quantite)}</td>
+                                        <td style={table_styles2}>{item.quantite}</td>
+                                        <td style={table_styles2}>{item.prix_total}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -326,15 +345,13 @@ export default function GestionFactures(props) {
                     <div>
                         <div>Reste à payer <span style={{fontWeight: 700, color: '#0e771a'}}>{factureSelectionne.length > 0 && factureSelectionne[0].reste_a_payer + ' Fcfa'}</span></div>
                     </div>
-                    <div>                        
                     <div style={{display: `${filtrer ? 'none' : 'inline'}`}}>
                         <ReactToPrint
                             trigger={() => <button style={{color: '#f1f1f1', height: '5vh', width: '20%', cursor: 'pointer', fontSize: 'large', fontWeight: '600'}}>Imprimer</button>}
                             content={() => componentRef.current}
                         />
                     </div>
-                    <button style={{width: '20%', height: '5vh', marginLeft: '15px', backgroundColor: '#e14046'}} onClick={() => {if(detailsFacture.length > 0) setModalConfirmation(true)}}>Annuler</button>
-                    </div>
+                    <button style={{width: '20%', height: '5vh', marginLeft: '15px', backgroundColor: '#e14046'}} onClick={() => {if(detailsFacture.length > 0 && parseInt(factureSelectionne[0].reste_a_payer) > 0) setModalConfirmation(true)}}>Annuler</button>
                     <h3 style={{marginTop: 5}}>Régler la facture</h3>
                     {factureSelectionne.length > 0 && factureSelectionne[0].reste_a_payer > 0 ? (
                         <div style={{marginTop: 13}}>
@@ -350,7 +367,7 @@ export default function GestionFactures(props) {
                                 Relicat: <span style={{fontWeight: 'bold'}}>{relicat + ' Fcfa'}</span>
                             </p>
                             <p>
-                                Restant à payer: <span style={{fontWeight: 'bold'}}>{resteaPayer + ' Fcfa'}</span>
+                                Reste à payer: <span style={{fontWeight: 'bold'}}>{resteaPayer + ' Fcfa'}</span>
                             </p>
                         </div>
                     ) : null}
@@ -358,19 +375,19 @@ export default function GestionFactures(props) {
                     <div>
                         {factureSelectionne.length > 0 && (
                             <div style={{display: 'none'}}>
-                                <Facture 
-                                ref={componentRef}
-                                medocCommandes={detailsFacture}
-                                idFacture={factureSelectionne[0].id}
-                                patient={factureSelectionne[0].patient}
-                                prixTotal={factureSelectionne[0].prix_total}
-                                reduction={factureSelectionne[0].reduction}
-                                aPayer={factureSelectionne[0].a_payer}
-                                montantVerse={factureSelectionne[0].montant_verse}
-                                relicat={factureSelectionne[0].relicat}
-                                resteaPayer={factureSelectionne[0].reste_a_payer}
-                                date={factureSelectionne[0].date_heure}
-                                nomConnecte={factureSelectionne[0].caissier}
+                                <FacturePharmacie
+                                    ref={componentRef}
+                                    medocCommandes={detailsFacture}
+                                    idFacture={factureSelectionne[0].id}
+                                    patient={factureSelectionne[0].patient}
+                                    prixTotal={factureSelectionne[0].prix_total}
+                                    reduction={factureSelectionne[0].reduction}
+                                    aPayer={factureSelectionne[0].a_payer}
+                                    montantVerse={factureSelectionne[0].montant_verse}
+                                    relicat={factureSelectionne[0].relicat}
+                                    resteaPayer={factureSelectionne[0].reste_a_payer}
+                                    date={factureSelectionne[0].date_heure}
+                                    caissier={factureSelectionne[0].caissier}
                                 />
                             </div>
                         )}

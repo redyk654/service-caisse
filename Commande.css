@@ -160,6 +160,7 @@
 
 .commande .right-side .details-commande table tbody {
     color: #012557;
+    font-weight: 600;
 }
 
 .commande .right-side .details-commande table thead tr td:nth-child(2),

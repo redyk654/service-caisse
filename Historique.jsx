@@ -12,7 +12,7 @@ export default function Historique(props) {
     const [historique, sethistorique] = useState([])
     const [dateJour, setdateJour] = useState('');
     const [reccetteTotal, setRecetteTotal] = useState(false);
-    const [dateRecherche, setdateRecherche] = useState('')
+    const [dateRecherche, setdateRecherche] = useState('');
 
     useEffect(() => {
         startChargement();
@@ -33,6 +33,7 @@ export default function Historique(props) {
         req.addEventListener('load', () => {
             const result = JSON.parse(req.responseText);
             sethistorique(result);
+            console.log(result);
             stopChargement();
             const req2 = new XMLHttpRequest();
             req2.open('GET', `http://localhost/backend-cma/recuperer_services_fait.php?date=${date}&recette=oui`);
@@ -52,6 +53,36 @@ export default function Historique(props) {
         setdateRecherche(date_select.current.value);
     }
 
+    const mois = (str) => {
+
+        switch(parseInt(str.substring(3, 5))) {
+            case 1:
+                return str.substring(0, 2) + " janvier " + str.substring(6, 10);
+            case 2:
+                return str.substring(0, 2) + " fevrier " + str.substring(6, 10);
+            case 3:
+                return str.substring(0, 2) + " mars " + str.substring(6, 10);
+            case 4:
+                return str.substring(0, 2) + " avril " +  str.substring(6, 10);
+            case 5:
+                return str.substring(0, 2) + " mai " + str.substring(6, 10);
+            case 6:
+                return str.substring(0, 2) + " juin " + str.substring(6, 10);
+            case 7:
+                return str.substring(0, 2) + " juillet " + str.substring(6, 10);
+            case 8:
+                return str.substring(0, 2) + " août " + str.substring(6, 10);
+            case 9:
+                return str.substring(0, 2) + " septembre " + str.substring(6, 10);
+            case 10:
+                return str.substring(0, 2) + " octobre " + str.substring(6, 10);
+            case 11:
+                return str.substring(0, 2) + " novembre " + str.substring(6, 10);
+            case 12:
+                return str.substring(0, 2) + " décembre " + str.substring(6, 10);
+        }
+    }
+
     return (
         <section className="historique">
             <h1>Historique des services médicaux</h1>
@@ -60,7 +91,7 @@ export default function Historique(props) {
                     <div className="entete-historique">
                         <input type="date" ref={date_select} />
                         <button onClick={rechercherHistorique}>rechercher</button>
-                        <div>historique du : <span style={{fontWeight: '700'}}>{dateJour}</span></div>
+                        <div>historique du : <span style={{fontWeight: '700'}}>{mois(dateJour)}</span></div>
                         <div>Recette total : <span style={{fontWeight: '700'}}>{reccetteTotal ? reccetteTotal + ' Fcfa' : '0 Fcfa'}</span></div>
                     </div>
                     <table>
@@ -81,10 +112,10 @@ export default function Historique(props) {
                                     <td>{item.designation}</td>
                                     <td>{item.prix}</td>
                                     <td>{item.caissier}</td>
-                                    <td>{item.date_fait}</td>
+                                    <td>{mois(item.date_fait)}</td>
                                     <td>{item.heure_fait}</td>
                                     <td>{item.patient}</td>
-                                    <td style={{fontWeight: '700'}}>{item.reduction > 0 ? '-' + item.reduction + '%': null}</td>
+                                    <td style={{fontWeight: '700'}}>{parseInt(item.reduction) > 0 ? '-' + item.reduction + ' %': 0}</td>
                                 </tr>
                             ))}
                         </tbody>

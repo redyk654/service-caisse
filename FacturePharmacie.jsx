@@ -29,11 +29,11 @@ const table_styles = {
     padding: 10,
     width: '100%',
     marginTop: '15px',
-    fontSize: 11
+    fontSize: '10px'
 }
 
 export default class Facture extends Component {
-    
+
     mois = (str) => {
 
         switch(parseInt(str.substring(3, 5))) {
@@ -63,7 +63,7 @@ export default class Facture extends Component {
                 return str.substring(0, 2) + " décembre " + str.substring(6, 10);
         }
     }
-
+    
     render() {
         return (
             <div style={{fontSize: 11, display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: '10px', backgroundColor: '#f1f1f1', height: '100vh'}}>
@@ -71,25 +71,23 @@ export default class Facture extends Component {
                     <h2 style={{color: 'black', background: 'none', marginBottom: '12px'}}>CMA de Bepanda</h2>
                     <h3 style={{color: 'black', background: 'none', marginBottom: '25px'}}>Caisse</h3>
                     <div style={{marginTop: 5}}>Facture N°<span style={{fontWeight: '600', marginTop: '15px'}}>{this.props.idFacture}</span></div>
-                    <div style={{marginTop: 5}}>Caissier : <span style={{fontWeight: '600', marginTop: '15px',}}>{this.props.nomConnecte}</span></div>
-                    <div style={{marginTop: '5px'}}>
-                        Le <strong>{this.props.date ? this.mois(this.props.date.substring(0, 10)) : 
-                        this.mois((new Date().toLocaleDateString()))}
-                        </strong> à <strong>{this.props.date ? this.props.date.substring(11, 19) : 
-                        (new Date().getHours() + 'h' + new Date().getMinutes() + 'min')}</strong>
-                    </div>
-                    <div style={{marginTop: 5}}>patient : <span style={{fontWeight: '600', marginTop: '15px'}}>{this.props.patient}</span></div>
+                    <div style={{marginTop: 5}}>Caissier : <span style={{fontWeight: '600', marginTop: '15px'}}>{this.props.caissier}</span></div>
+                    <div style={{marginTop: '5px'}}>Le <strong>{this.mois(this.props.date.substring(0, 10))}</strong> à <strong>{this.props.date.substring(11, 19)}</strong></div>
                     <div style={{textAlign: 'center', marginBottom: 20}}>
                         <table style={table_styles}>
                             <thead>
                                 <th style={table_styles1}>Désignation</th>
-                                <th style={table_styles2}>Prix</th>
+                                <th style={table_styles2}>Pu</th>
+                                <th style={table_styles2}>Qte</th>
+                                <th style={table_styles2}>Total</th>
                             </thead>
                             <tbody>
                                 {this.props.medocCommandes.map(item => (
                                     <tr>
                                         <td style={table_styles1}>{item.designation}</td>
-                                        <td style={table_styles2}>{item.prix}</td>
+                                        <td style={table_styles2}>{parseInt(item.prix_total) / parseInt(item.quantite)}</td>
+                                        <td style={table_styles2}>{item.quantite}</td>
+                                        <td style={table_styles2}>{item.prix_total}</td>
                                     </tr>
                                 ))}
                             </tbody>
