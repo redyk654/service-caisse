@@ -6,36 +6,65 @@ import ImprimerRecette from '../ImprimerRecette/ImprimerRecette';
 
 const customStyles1 = {
     content: {
-      top: '32%',
+      top: '42%',
       left: '50%',
       right: 'auto',
       bottom: 'auto',
       marginRight: '-50%',
       transform: 'translate(-50%, -50%)',
       background: '#0e771a',
+      width: '29%'
     },
 };
 
+const ulBox = {
+    border: '1px solid gray',
+    overflowY: 'auto',
+    position: 'relative',
+    height: '60vh',
+    background: '#f1f1f1',
+}
+
+const styleBtnAutre = {
+    backgroundColor: '#6d6f94',
+    color: '#fff',
+    height: '4vh',
+    width: '35%',
+    marginTop: '5px',
+    fontSize: '16px',
+    cursor: 'pointer'
+}
+
+const searchInput = {
+    width: '90%',
+    height: '5vh',
+    outline: 'none',
+    borderRadius: '5px',
+    color: '#0e771a',
+    fontSize: '17px',
+    marginBottom: '5px',
+}
+
 export default function GestionRecette(props) {
 
-    const servicesInit = [
-        {code: 'PHA', service: 'Pharmacie', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'MA', service: 'Maternité', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'RX', service: 'Radiologie', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'LAB', service: 'Laboratoire', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'ECHO', service: 'Echographie', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'MED', service: 'Médécine', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'CHR', service: 'Petite chirurgie', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'UPEC', service: 'Upec', recette: 0, pourcentage: 0, recetteRestante: 0},
-        {code: 'CO', service: 'Consultation', recette: 0, pourcentage: 0, recetteRestante: 0},
-    ];
+    const detail = {code: '', designation: '', prix: 0}
+
+    let date_select1 = useRef();
+    let date_select2 = useRef();
+    let heure_select1 = useRef();
+    let heure_select2 = useRef();
 
     const componentRef = useRef();
 
+    const [historique, sethistorique] = useState([]);
     const [listeComptes, setListeComptes] = useState([]);
-    const [services, setServices] = useState(servicesInit);
-    const [servicesSauvegarde, setservicesSauvegarde] = useState([]);
-    const [recetteTotal, setrecetteTotal] = useState(0);
+    const [dateJour, setdateJour] = useState('');
+    const [recetteTotal, setRecetteTotal] = useState(0);
+    const [dateDepart, setdateDepart] = useState('');
+    const [dateFin, setdateFin] = useState('');
+    const [services, setServices] = useState([]);
+    const [servicesSauvegarde, setServicesSauvegarde] = useState([]);
+    const [categorie, setCategorie]= useState('');
     const [recetteRestante, setrecetteRestante] = useState(0);
     const [montantRetire, setmontantRetire] = useState(0);
     const [caissier, setCaissier] = useState('');
@@ -45,12 +74,16 @@ export default function GestionRecette(props) {
     const [modalValidation, setmodalValidation] = useState(false);
     const [modalReussi, setModalReussi] = useState(false);
     const [valeur, setValeur] = useState('');
-    const [generalite, setGeneralite] = useState(0);
+    const [generalites, setGeneralites] = useState([]);
+    const [totalGeneralites, setTotalGeneralites] = useState(0);
     const [itemPourcentage, setitemPourcentage] = useState('');
+    const [detailsState, setDetailsState] = useState([detail]);
+    const [detailsSauvegarde, setDetailsSauvegarde] = useState([]);
+    const [state, setState] = useState(false);
 
     useEffect(() => {
         const req = new XMLHttpRequest();
-        req.open('GET', 'http://localhost/backend-cma/recuperer_caissier.php');
+        req.open('GET', 'http://192.168.1.101/backend-cma/recuperer_caissier.php');
 
         req.addEventListener('load', () => {
             if(req.status >= 200 && req.status < 400) {
@@ -65,88 +98,151 @@ export default function GestionRecette(props) {
     }, [services]);
 
     useEffect(() => {
-        setmontantRetire(recetteTotal - recetteRestante);
-    }, [recetteRestante]);
+        if (dateDepart.length > 0 && dateFin.length > 0) {
 
-    const afficherRecettes = (e) => {
-        setCaissier(e.target.id);
-        const d = new Date();
-        let i = 0;
-        // Requête pour recuperer les recettes par categorie
-        services.map(item => {
-            setGeneralite(0);
-            item.pourcentage = 0;
+            let dateD = dateDepart;
+            let dateF = dateFin;
+    
             const data = new FormData();
-            data.append('code', item.code);
-            data.append('caissier', e.target.id);
-
+            data.append('dateD', dateD);
+            data.append('dateF', dateF);
+            data.append('caissier', caissier);
+    
             const req = new XMLHttpRequest();
-
-            if (d.getHours() >= 6 && d.getHours() <= 12) {
-                req.open('POST', `http://localhost/backend-cma/gestion_pourcentage.php?moment=nuit`);
-                req.send(data);
-            } else if (d.getHours() <= 22 && d.getHours() >= 14) {
-                req.open('POST', `http://localhost/backend-cma/gestion_pourcentage.php?moment=jour`);
-                req.send(data);
-            }
-
+            req.open('POST', `http://192.168.1.101/backend-cma/gestion_pourcentage.php`);
+    
             req.addEventListener('load', () => {
-                i++;
-                const result = JSON.parse(req.responseText).recette;
-                item.recette = JSON.parse(req.responseText).recette != null ? result : 0;
-                item.recetteRestante = JSON.parse(req.responseText).recette != null ? result : 0;
-                if (services.length === i) {
-                    // Rerendre le composant pour mettre à jour les états dans la vue
-                    setRerender(!rerender)
-                    setservicesSauvegarde(services);
-
-                    let recetteT = 0
-                    services.map(item => {recetteT += parseInt(item.recette)});
-                    setrecetteTotal(recetteT);
-                    setrecetteRestante(recetteT);
-                    setmontantRetire(0);
+                fetchDetails();
+                const result = JSON.parse(req.responseText);
+                sethistorique(result);
+                let recette = 0;
+                if (result.length > 0) {
+                    result.map(item => {
+                        recette += parseInt(item.recette);
+                    })
+                    setRecetteTotal(recette);
+                    setrecetteRestante(recette);
+                } else {
+                    setRecetteTotal(0);
                 }
-
             });
+    
+            req.send(data);
+        }
+
+    }, [dateDepart, dateFin, caissier]);
+
+    useEffect(() => {
+        setrecetteRestante(recetteTotal - montantRetire);
+    }, [montantRetire]);
+
+    const fetchDetails = () => {
+        let dateD = dateDepart;
+        let dateF = dateFin;
+
+        const data = new FormData();
+        data.append('dateD', dateD);
+        data.append('dateF', dateF);
+        data.append('caissier', caissier);
+
+        const req = new XMLHttpRequest();
+        req.open('POST', `http://192.168.1.101/backend-cma/gestion_pourcentage.php?details=oui`);
+
+        req.addEventListener('load', () => {
+            const result = JSON.parse(req.responseText);
+            setServices(result);
+            setServicesSauvegarde(result);
         });
+
+        req.send(data)
+    }
+
+    const changerCategorie = (e) => {
+        setServices(servicesSauvegarde.filter(item => item.categorie.toLowerCase() === e.target.value));
+    }
+
+    const rechercherHistorique = () => {
+        setdateDepart(date_select1.current.value + ' ' + heure_select1.current.value + ':00');
+        setdateFin(date_select2.current.value + ' ' + heure_select2.current.value + ':59');
+        setCaissier(document.getElementById('caissier').value);
     }
 
     const changerContenuModal = () => {
         return modalContenu ?
         (
             <Fragment>
-                <h2 style={{color: '#fff', textAlign: 'center'}}>{itemPourcentage}</h2>
-                <div style={{color: '#fff', textAlign: 'center'}}>Entrez le pourcentage</div>
+                <h2 style={{color: '#fff', textAlign: 'center', marginBottom: '10px'}}>{itemPourcentage}</h2>
+                <div style={{color: '#fff', textAlign: 'center',}}>Entrez le pourcentage</div>
                 <div style={{textAlign: 'center'}} className='modal-button'>
-                    <input type="text"value={valeur} onChange={(e) => {if (!isNaN(e.target.value)) {setValeur(e.target.value)}}} style={{width: '40%'}} />
-                    <button id='confirmer' className='btn-confirmation' style={{width: '15%', height: '3vh', cursor: 'pointer', marginLeft: '5px'}} onClick={appliquerPourcentage}>OK</button>
+                    <input type="text"value={valeur} onChange={(e) => {if (!isNaN(e.target.value)) {setValeur(e.target.value)}}} style={{width: '40%', height: '3vh', marginBottom: '6px'}} />
+                    <button 
+                        id='confirmer' 
+                        className='btn-confirmation' 
+                        style={{width: '15%', height: '3vh', cursor: 'pointer', marginLeft: '5px'}} 
+                        onClick={appliquerPourcentage}>
+                        OK
+                    </button>
+                </div>
+                <p>
+                    <input style={searchInput} type="text" placeholder="recherchez..." autoComplete='off' />
+                </p>
+                <div>
+                    <table>
+                        <thead>
+                            <th>Services</th>
+                            <th>Total</th>
+                        </thead>
+                        <tbody>
+                            {services.length > 0 && services.map(item => (
+                                <tr>
+                                    <td>{item.designation}</td>
+                                    <td style={{color: '#0e771a', fontWeight: '600'}}>{item.prix_total}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </Fragment>
         ) : 
         (
             <Fragment>
-                <h2 style={{color: '#fff', textAlign: 'center'}}>Généralités</h2>
-                <div style={{color: '#fff', textAlign: 'center'}}>Entrez le montant pour les généralités</div>
-                <div style={{textAlign: 'center'}} className='modal-button'>
-                    <input type="text" value={valeur} onChange={(e) => {if (!isNaN(e.target.value)) {setValeur(e.target.value)}}} style={{width: '40%'}} />
-                    <button id='confirmer' className='btn-confirmation' style={{width: '15%', height: '3vh', cursor: 'pointer', marginLeft: '5px'}} onClick={appliquerGeneralite}>OK</button>
+                <h2 style={{color: '#fff', textAlign: 'center'}}></h2>
+                <div style={{margin: 10}}>
+                    <select name="categorie" id="categorie" onChange={changerCategorie}>
+                        <option value="maternité">Maternité</option>
+                        <option value="imagerie">Imagerie</option>
+                        <option value="laboratoire">Laboratoire</option>
+                        <option value="carnet">Carnet</option>
+                        <option value="medecine">Medecine</option>
+                        <option value="chirurgie">Chirurgie</option>
+                        <option value="upec">Upec</option>
+                        <option value="consultation spécialiste">Consultation Spécialiste</option>
+                    </select>
+                </div>
+                <div>
+                    <ul style={ulBox}>
+                        {services.length > 0 && services.map(item => (
+                            <li style={{padding: '5px',}}>{extraireCode(item.designation) + ' (' + item.prix_total + ')       ' + item.nb}</li>
+                        ))}
+                    </ul>
                 </div>
             </Fragment>
         )
     }
 
-    const appliquerGeneralite = () => {
-        // On retire les généralités sur la recette
-        if (valeur.length > 0 && !isNaN(valeur)) {
-            let recetteT = 0
-            services.map(item => {recetteT += parseInt(item.recetteRestante)});
-            recetteT -= valeur;
-            setrecetteRestante(recetteT);
-            setGeneralite(parseInt(valeur));
-            // setrecetteRestante((parseInt(recetteTotal) - parseInt(valeur)));
-            setValeur('');
-            fermerModalConfirmation();
-        }
+    const appliquerGeneralite = (e) => {
+        // On retire les généralités de la liste des détails et on fait la soustraction sur le montant de la recette
+        services.map(item => {
+            if(item.code === detailsState[0].code) {
+                item.detailsServices = item.detailsServices.filter(item2 => (item2.designation !== e.target.id));
+                setDetailsSauvegarde(detailsSauvegarde.filter(item2 => (item2.designation !== e.target.id)));
+                setGeneralites([...generalites, {designation: e.target.id, prix: e.target.value}]);
+                item.recetteRestante = (parseInt(item.recetteRestante) - parseInt(e.target.value));
+                setrecetteRestante(parseInt(recetteRestante) - parseInt(e.target.value));
+                setState(!state);
+            }
+        });
+
     }
 
     const appliquerPourcentage = () => {
@@ -154,12 +250,11 @@ export default function GestionRecette(props) {
         if (valeur.length > 0 && !isNaN(valeur)) {
             const item = services.filter(item => (item.service === itemPourcentage));
             item[0].pourcentage = parseInt(valeur);
-            item[0].recetteRestante = parseInt(item[0].recette) - parseInt(item[0].recette) * (item[0].pourcentage / 100);
+            item[0].recetteRestante = parseInt(item[0].recetteRestante) - parseInt(item[0].recetteRestante) * (item[0].pourcentage / 100);
 
             // On met à jour la recette restante
             let recetteT = 0
             services.map(item => {recetteT += parseInt(item.recetteRestante)});
-            recetteT -= generalite;
             setrecetteRestante(recetteT);
 
             setValeur('');
@@ -173,55 +268,52 @@ export default function GestionRecette(props) {
         return Math.floor((1 + Math.random()) * 0x10000)
                .toString(16)
                .substring(1) + recetteTotal;
-
     }
 
-    const enregitrerDetails = (id_recette) => {
-        // On enregistre les détails de la recette
-        let i = 0
-        services.map(item => {
-            const data = new FormData();
-            data.append('id_recette', id_recette);
-            data.append('categorie', item.service);
-            data.append('recette', item.recette);
-            data.append('pourcentage', item.pourcentage);
-            data.append('recette_restante', item.recetteRestante);
+    // const enregitrerDetails = (id_recette) => {
+    //     // On enregistre les détails de la recette
+    //     let i = 0
+    //     services.map(item => {
+    //         const data = new FormData();
+    //         data.append('id_recette', id_recette);
+    //         data.append('categorie', item.service);
+    //         data.append('recette', item.recette);
+    //         data.append('pourcentage', item.pourcentage);
+    //         data.append('recette_restante', item.recetteRestante);
 
-            const req = new XMLHttpRequest();
-            req.open('POST', 'http://localhost/backend-cma/gestion_pourcentage.php');
+    //         const req = new XMLHttpRequest();
+    //         req.open('POST', 'http://192.168.1.101/backend-cma/gestion_pourcentage.php');
 
-            req.addEventListener('load', () => {
-                i++
-                if (services.length === i) {
-                    fermerModaValidation();
-                    setModalReussi(true);
-                }
-            });
+    //         req.addEventListener('load', () => {
+    //             i++
+    //             if (services.length === i) {
+    //                 fermerModaValidation();
+    //             }
+    //         });
 
-            req.send(data);
-        })
-    }
+    //         req.send(data);
+    //     })
+    // }
 
     const terminer = () => {
         // Enregistrement de la recette et de tous les détails
-        document.getElementById('oui').disabled = true;
         const id_recette = genererId();
 
         const data = new FormData();
         data.append('id_recette', id_recette);
         data.append('recette_total', recetteTotal);
-        data.append('generalite', generalite);
         data.append('montant_retire', montantRetire);
         data.append('recette_restante', recetteRestante);
         data.append('caissier', caissier);
         data.append('regisseur', props.nomConnecte);
 
         const req = new XMLHttpRequest();
-        req.open('POST', 'http://localhost/backend-cma/gestion_pourcentage.php');
+        req.open('POST', 'http://192.168.1.101/backend-cma/gestion_pourcentage.php');
 
         req.addEventListener('load', () => {
             if(req.status >= 200 && req.status < 400) {
-                enregitrerDetails(id_recette);
+                fermerModaValidation();
+                annuler()
             }
         })
 
@@ -230,24 +322,43 @@ export default function GestionRecette(props) {
     }
 
     const annuler = () => {
-        setServices(servicesInit);
-        setGeneralite(0);
         setmontantRetire(0);
         setrecetteRestante(0);
-        setrecetteTotal(0)
+        setRecetteTotal(0);
+        sethistorique([]);
+        setServices([]);
+        document.getElementById('retire').value = "";
     }
 
     const fermerModalConfirmation = () => {
         setModalConfirmation(false);
+        setServices(servicesSauvegarde);
     }
 
     const fermerModaValidation = () => {
-        setmodalValidation(false)
+        setmodalValidation(false);
     }
 
     const fermerModalReussi = () => {
         setModalReussi(false);
         annuler();
+    }
+
+    const extraireCode = (designation) => {
+        const codes = ['RX', 'LAB', 'MA', 'MED', 'CHR', 'CO', 'UPEC', 'SP', 'CA'];
+        let designation_extrait = '';
+        
+        codes.forEach(item => {
+            if(designation.toUpperCase().indexOf(item) === 0) {
+                designation_extrait =  designation.slice(item.length + 1);
+            } else if (designation.toUpperCase().indexOf('ECHO') === 0)  {
+                designation_extrait = designation;
+            }
+        });
+
+        if (designation_extrait === '') designation_extrait = designation;
+
+        return designation_extrait;
     }
 
     return (
@@ -293,39 +404,61 @@ export default function GestionRecette(props) {
 
             <div className="container-gestion">
                 <div className="box-1">
-                    <h1>Comptes</h1>
-                    <ul>
-                        {listeComptes.length > 0 && listeComptes.map(item => (
-                        <li id={item.nom_user} onClick={afficherRecettes}>{item.nom_user.toUpperCase()}</li>
-                        ))}
-                    </ul>
+                    <h1>Options</h1>
+                    <div>
+                        <p>
+                            <label htmlFor="">Du : </label>
+                            <input type="date" ref={date_select1} />
+                            <input type="time" ref={heure_select1} />
+                        </p>
+                        <p>
+                            <label htmlFor="">Au : </label>
+                            <input type="date" ref={date_select2} />
+                            <input type="time" ref={heure_select2} />
+                        </p>
+                        <p>
+                            <label htmlFor="">Caissier : </label>
+                            <select name="caissier" id="caissier">
+                                {props.role === "caissier" ? 
+                                <option value={props.nomConnecte}>{props.nomConnecte.toUpperCase()}</option> :
+                                listeComptes.map(item => (
+                                    <option value={item.nom_user}>{item.nom_user.toUpperCase()}</option>
+                                ))                               }
+                            </select>
+                        </p>
+                    </div>
+                    <div style={{paddingLeft: '20px'}}>
+                        <button style={styleBtnAutre} onClick={rechercherHistorique}>rechercher</button>
+                    </div>
                 </div>
                 <div className="box-2">
                     <div className="btn-container" style={{textAlign: 'center'}}>
-                        <div>généralités: <span style={{fontWeight: '600'}}>{generalite}</span></div>
                         <button onClick={() => {setModalContenu(false); setModalConfirmation(true);}}>Généralités</button>
                     </div>
                     <table>
                         <thead>
-                            <th>Services</th>
-                            <th>Recette du jour</th>
-                            <th>Pourcentage</th>
-                            <th>Recette restante</th>
-                            <th>Modifier</th>
+                            <th>Rubrique</th>
+                            <th>Recette</th>
                         </thead>
                         <tbody>
-                            {services.map(item => (
+                            {historique.length > 0 && historique.map(item => (
                                 <tr>
-                                    <td>{item.service}</td>
+                                    <td>{item.categorie}</td>
                                     <td style={{color: '#0e771a', fontWeight: '600'}}>{item.recette}</td>
-                                    <td>{item.pourcentage + ' %'}</td>
-                                    <td style={{color: '#0e771a', fontWeight: '600'}}>{item.recetteRestante}</td>
-                                    <td><button style={{cursor: 'pointer'}} onClick={() => {setModalContenu(true); setModalConfirmation(true); setitemPourcentage(item.service);}}>éditer</button></td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                     <div style={{marginTop: '50px', textAlign: 'center'}}>
+                        <div>
+                            <input style={{width: '100px', height: '3vh'}} type="text" id="retire" />
+                            <button 
+                                style={{margin: 5, color: '#fff', backgroundColor: '#012557', width: '40px', height: '3vh', cursor: 'pointer'}}
+                                onClick={() => setmontantRetire(parseInt(document.getElementById('retire').value))}
+                            >
+                                OK
+                            </button>
+                        </div>
                         <div>
                             Recette Total : <span style={{fontWeight: '600'}}>{recetteTotal + ' Fcfa'}</span>
                         </div>
@@ -337,8 +470,7 @@ export default function GestionRecette(props) {
                         </div>
                     </div>
                     <div className="btn-valid-annul" style={{textAlign: 'center', marginTop: '10px',}}>
-                        <button onClick={annuler}>Annuler</button>
-                        <button onClick={() => {if(caissier.length > 0) {setmodalValidation(true)}}}>Terminer</button>
+                        <button onClick={terminer}>Terminer</button>
                     </div>
                 </div>
             </div>

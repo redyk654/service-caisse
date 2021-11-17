@@ -79,10 +79,10 @@ export default function Entete(props) {
             const req = new XMLHttpRequest();
 
             if (d.getHours() >= 5 && d.getHours() <= 12) {
-                req.open('POST', `http://localhost/backend-cma/gestion_pourcentage.php?moment=nuit`);
+                req.open('POST', `http://192.168.1.101/backend-cma/gestion_pourcentage.php?moment=nuit`);
                 req.send(data);
             } else if (d.getHours() <= 22 && d.getHours() >= 13) {
-                req.open('POST', `http://localhost/backend-cma/gestion_pourcentage.php?moment=jour`);
+                req.open('POST', `http://192.168.1.101/backend-cma/gestion_pourcentage.php?moment=jour`);
                 req.send(data);
             } else {
                 deconnection();
@@ -112,7 +112,7 @@ export default function Entete(props) {
         data.append('montant', recettejour.recette);
 
         const req = new XMLHttpRequest();
-        req.open('POST', 'http://localhost/backend-cma/gestion_recette.php');
+        req.open('POST', 'http://192.168.1.101/backend-cma/gestion_recette.php');
 
         req.addEventListener('load', () => {
             if (req.status >= 200 && req.status < 400) {
@@ -140,7 +140,7 @@ export default function Entete(props) {
             data.append('nouveau', nouveau);
 
             const req = new XMLHttpRequest();
-            req.open('POST', 'http://localhost/backend-cma/modif_pass_caisse.php');
+            req.open('POST', 'http://192.168.1.101/backend-cma/modif_pass_caisse.php');
 
             req.addEventListener('load', () => {
                 if (req.status >= 200 && req.status < 400) {
@@ -243,9 +243,9 @@ export default function Entete(props) {
             </Modal>
             <div className="box-entete">
                 <h3>{props.nomConnecte.toUpperCase()}</h3>
-                <button onClick={() => {props.role === "caissier" ? calculRecetteJour() : deconnection()}}>Déconnection</button>
+                <button onClick={() => {deconnection()}}>Déconnection</button>
             </div>
-            <button style={{width: '15%', position: 'absolute', left: '250px', bottom: 30}} onClick={() => {setModalConfirmation(true)}} >Modifier mot de passe</button>
+            {/* <button style={{width: '15%', position: 'absolute', left: '290px', bottom: 30,}} onClick={() => {setModalConfirmation(true)}} >Modifier mot de passe</button> */}
             <h1>
                 © CMA de Bepanda
             </h1>

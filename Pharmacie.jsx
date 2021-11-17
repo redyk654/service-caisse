@@ -76,9 +76,9 @@ export default function GestionFactures(props) {
         setfactureSauvegarde([]);
         const req = new XMLHttpRequest();
         if (filtrer) {
-            req.open('GET', 'http://localhost/backend-cma/factures_pharmacie.php?filtrer=oui');
+            req.open('GET', 'http://192.168.1.101/backend-cma/factures_pharmacie.php?filtrer=oui');
             const req2 = new XMLHttpRequest();
-            req2.open('GET', 'http://localhost/backend-cma/factures_pharmacie.php?filtrer=oui&manquant');
+            req2.open('GET', 'http://192.168.1.101/backend-cma/factures_pharmacie.php?filtrer=oui&manquant');
             req2.addEventListener('load', () => {
                 const result = JSON.parse(req2.responseText);
                 setManquantTotal(result[0].manquant);
@@ -86,7 +86,7 @@ export default function GestionFactures(props) {
             req2.send();
 
         } else {
-            req.open('GET', 'http://localhost/backend-cma/factures_pharmacie.php');
+            req.open('GET', 'http://192.168.1.101/backend-cma/factures_pharmacie.php');
         }
         req.addEventListener("load", () => {
             if (req.status >= 200 && req.status < 400) { // Le serveur a réussi à traiter la requête
@@ -111,7 +111,7 @@ export default function GestionFactures(props) {
         if (factureSelectionne.length > 0) {
             const req = new XMLHttpRequest();
     
-            req.open('GET', `http://localhost/backend-cma/factures_pharmacie.php?id=${factureSelectionne[0].id}`);
+            req.open('GET', `http://192.168.1.101/backend-cma/factures_pharmacie.php?id=${factureSelectionne[0].id}`);
     
             req.addEventListener('load', () => {
                 const result = JSON.parse(req.responseText);
@@ -131,14 +131,14 @@ export default function GestionFactures(props) {
     }
 
     const mettreAjourData = () => {
-        if (montantVerse.length > 0 && factureSelectionne[0].reste_a_payer) {
+        if (montantVerse.length > 0 && factureSelectionne[0].a_payer) {
             setverse(montantVerse);
 
-            if (parseInt(factureSelectionne[0].reste_a_payer) < parseInt(montantVerse)) {
-                setrelicat(parseInt(montantVerse) - parseInt(factureSelectionne[0].reste_a_payer));
+            if (parseInt(factureSelectionne[0].a_payer) < parseInt(montantVerse)) {
+                setrelicat(parseInt(montantVerse) - parseInt(factureSelectionne[0].a_payer));
                 setresteaPayer(0)
             } else {
-                setresteaPayer(parseInt(factureSelectionne[0].reste_a_payer - parseInt(montantVerse)));
+                setresteaPayer(parseInt(factureSelectionne[0].a_payer - parseInt(montantVerse)));
                 setrelicat(0)
             }
 
@@ -160,7 +160,7 @@ export default function GestionFactures(props) {
             data.append('caissier', props.nomConnecte);
 
             const req = new XMLHttpRequest();
-            req.open('POST', 'http://localhost/backend-cma/factures_pharmacie.php')
+            req.open('POST', 'http://192.168.1.101/backend-cma/factures_pharmacie.php')
 
             req.addEventListener('load', () => {
                 // Mise à jour des stocks des médicaments vendus
@@ -170,7 +170,7 @@ export default function GestionFactures(props) {
                     data1.append('id_produit', item.id_prod);
 
                     const req1 = new XMLHttpRequest();
-                    req1.open('POST', 'http://localhost/backend-cma/maj_medocs.php');
+                    req1.open('POST', 'http://192.168.1.101/backend-cma/maj_medocs.php');
 
                     req1.addEventListener("load", function () {
                         if (req1.status >= 200 && req1.status < 400) {
@@ -195,7 +195,7 @@ export default function GestionFactures(props) {
 
     const filtrerListe = (e) => {
         // const medocFilter = factureSauvegarde.filter(item => (item.id.indexOf(e.target.value) !== -1));
-        setFactures(factureSauvegarde.filter(item => (item.id.indexOf(e.target.value) !== -1)));
+        setFactures(factureSauvegarde.filter(item => (item.patient.toLowerCase().indexOf(e.target.value.toLowerCase()) !== -1)));
     }
 
     const supprimerFacture = () => {
@@ -204,7 +204,7 @@ export default function GestionFactures(props) {
         document.querySelector('.supp').disabled = true;
 
         const req2 = new XMLHttpRequest();
-        req2.open('GET', `http://localhost/backend-cma/supprimer_facture.php?id=${factureSelectionne[0].id}`);
+        req2.open('GET', `http://192.168.1.101/backend-cma/supprimer_facture.php?id=${factureSelectionne[0].id}`);
         req2.addEventListener('load', () => {
             fermerModalConfirmation();
             setSupp(true);
@@ -289,7 +289,7 @@ export default function GestionFactures(props) {
             <div className="liste-medoc">
 
                 <p className="search-zone">
-                    <input type="text" placeholder="N° facture" onChange={filtrerListe} />
+                    <input type="text" placeholder="Nom du patient" onChange={filtrerListe} />
                 </p>
                 <p>
                     <label htmlFor="" style={{marginRight: 5, fontWeight: 700}}>Non réglés</label>
@@ -303,7 +303,7 @@ export default function GestionFactures(props) {
                 <h3>{filtrer ? 'Factures non réglés' : 'Factures'}</h3>
                 <ul>
                     {factures.length > 0 ? factures.map(item => (
-                        <li id={item.id} key={item.id} onClick={afficherInfos} style={{color: `${parseInt(item.en_stock) < parseInt(item.min_rec) ? 'red' : ''}`}}>{item.id}</li>
+                        <li id={item.id} key={item.id} onClick={afficherInfos} style={{color: `${parseInt(item.en_stock) < parseInt(item.min_rec) ? 'red' : ''}`}}>{item.patient}</li>
                     )) : null}
                 </ul>
             </div>
@@ -316,6 +316,8 @@ export default function GestionFactures(props) {
                     <div>
                         <div>Le <strong>{factureSelectionne.length > 0 && mois(factureSelectionne[0].date_heure.substring(0, 11))}</strong> à <strong>{factureSelectionne.length > 0 && factureSelectionne[0].date_heure.substring(11, )}</strong></div>
                     </div>
+                    <div style={{marginTop: 5}}>patient : <span style={{fontWeight: '600', marginTop: '15px'}}>{factureSelectionne.length > 0 && factureSelectionne[0].patient}</span></div>
+                    {factureSelectionne.length > 0 && factureSelectionne[0].assurance !== "aucune" ? <div>couvert par : <strong>{factureSelectionne[0].assurance.toUpperCase()}</strong></div> : null}
                     <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 20, width: '100%'}}>
                         <table style={table_styles}>
                             <thead>
@@ -351,7 +353,9 @@ export default function GestionFactures(props) {
                             content={() => componentRef.current}
                         />
                     </div>
-                    <button style={{width: '20%', height: '5vh', marginLeft: '15px', backgroundColor: '#e14046'}} onClick={() => {if(detailsFacture.length > 0 && parseInt(factureSelectionne[0].reste_a_payer) > 0) setModalConfirmation(true)}}>Annuler</button>
+                    <div style={{display: `${!filtrer ? 'none' : 'inline'}`}}>
+                        <button style={{width: '20%', height: '5vh', marginLeft: '15px', backgroundColor: '#e14046'}} onClick={() => {if(detailsFacture.length > 0 && parseInt(factureSelectionne[0].reste_a_payer) > 0) setModalConfirmation(true)}}>Annuler</button>
+                    </div>
                     <h3 style={{marginTop: 5}}>Régler la facture</h3>
                     {factureSelectionne.length > 0 && factureSelectionne[0].reste_a_payer > 0 ? (
                         <div style={{marginTop: 13}}>
@@ -388,6 +392,8 @@ export default function GestionFactures(props) {
                                     resteaPayer={factureSelectionne[0].reste_a_payer}
                                     date={factureSelectionne[0].date_heure}
                                     caissier={factureSelectionne[0].caissier}
+                                    patient={factureSelectionne[0].patient}
+                                    assurance={factureSelectionne[0].assurance}
                                 />
                             </div>
                         )}

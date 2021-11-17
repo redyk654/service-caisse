@@ -40,6 +40,19 @@
     cursor: pointer;
 }
 
+li {
+    color: #0e771a;
+    font-weight: 600;
+    width: 100%;
+    padding: 0px 5px;
+}
+
+li:hover {
+    background-color: #0e771a;
+    color: #f1f1f1;
+    cursor: pointer;
+}
+
 .gestion-recette table {
     border-spacing: 0px;
     width: 100%;

@@ -78,9 +78,9 @@ export default function GestionFactures(props) {
         setfactureSauvegarde([]);
         const req = new XMLHttpRequest();
         if (filtrer) {
-            req.open('GET', 'http://localhost/backend-cma/gestion_factures.php?filtrer=oui');
+            req.open('GET', 'http://192.168.1.101/backend-cma/gestion_factures.php?filtrer=oui');
             const req2 = new XMLHttpRequest();
-            req2.open('GET', 'http://localhost/backend-cma/gestion_factures.php?filtrer=oui&manquant');
+            req2.open('GET', 'http://192.168.1.101/backend-cma/gestion_factures.php?filtrer=oui&manquant');
             req2.addEventListener('load', () => {
                 const result = JSON.parse(req2.responseText);
                 setManquantTotal(result[0].manquant);
@@ -88,7 +88,7 @@ export default function GestionFactures(props) {
             req2.send();
 
         } else {
-            req.open('GET', 'http://localhost/backend-cma/gestion_factures.php');
+            req.open('GET', 'http://192.168.1.101/backend-cma/gestion_factures.php');
         }
         req.addEventListener("load", () => {
             if (req.status >= 200 && req.status < 400) { // Le serveur a réussi à traiter la requête
@@ -113,7 +113,7 @@ export default function GestionFactures(props) {
         if (factureSelectionne.length > 0) {
             const req = new XMLHttpRequest();
     
-            req.open('GET', `http://localhost/backend-cma/gestion_factures.php?id=${factureSelectionne[0].id}`);
+            req.open('GET', `http://192.168.1.101/backend-cma/gestion_factures.php?id=${factureSelectionne[0].id}`);
     
             req.addEventListener('load', () => {
                 const result = JSON.parse(req.responseText);
@@ -137,11 +137,11 @@ export default function GestionFactures(props) {
         if (montantVerse.length > 0 && factureSelectionne[0].reste_a_payer) {
             setverse(montantVerse);
 
-            if (parseInt(factureSelectionne[0].reste_a_payer) < parseInt(montantVerse)) {
-                setrelicat(parseInt(montantVerse) - parseInt(factureSelectionne[0].reste_a_payer));
+            if (parseInt(factureSelectionne[0].a_payer) < parseInt(montantVerse)) {
+                setrelicat(parseInt(montantVerse) - parseInt(factureSelectionne[0].a_payer));
                 setresteaPayer(0)
             } else {
-                setresteaPayer(parseInt(factureSelectionne[0].reste_a_payer - parseInt(montantVerse)));
+                setresteaPayer(parseInt(factureSelectionne[0].a_payer - parseInt(montantVerse)));
                 setrelicat(0)
             }
 
@@ -150,27 +150,29 @@ export default function GestionFactures(props) {
      }
 
      const reglerFacture = () => {
-         if (verse > 0) {
-             // Règlement de la facture
-
-            const data = new FormData();
-            let newMontantVerse = parseInt(factureSelectionne[0].montant_verse) + parseInt(verse);
-
-            data.append('id', factureSelectionne[0].id);
-            data.append('montant_verse', newMontantVerse);
-            data.append('reste_a_payer', resteaPayer);
-            data.append('relicat', relicat);
-
-            const req = new XMLHttpRequest();
-            req.open('POST', 'http://localhost/backend-cma/gestion_factures.php')
-
-            req.addEventListener('load', () => {
-                setSupp(false);
-                setModalReussi(true);
-            });
-
-            req.send(data);
-        }
+         if (factureSelectionne.length > 0) {
+             if (verse >= factureSelectionne[0].a_payer) {
+                 // Règlement de la facture
+    
+                const data = new FormData();
+                let newMontantVerse = parseInt(factureSelectionne[0].montant_verse) + parseInt(verse);
+    
+                data.append('id', factureSelectionne[0].id);
+                data.append('montant_verse', newMontantVerse);
+                data.append('reste_a_payer', resteaPayer);
+                data.append('relicat', relicat);
+    
+                const req = new XMLHttpRequest();
+                req.open('POST', 'http://192.168.1.101/backend-cma/gestion_factures.php')
+    
+                req.addEventListener('load', () => {
+                    setSupp(false);
+                    setModalReussi(true);
+                });
+    
+                req.send(data);
+            }
+         }
      }
 
      const reinitialsation = () => {
@@ -191,7 +193,7 @@ export default function GestionFactures(props) {
         data.append('id', factureSelectionne[0].id);
 
         const req = new XMLHttpRequest();
-        req.open('POST', 'http://localhost/backend-cma/supprimer_facture.php');
+        req.open('POST', 'http://192.168.1.101/backend-cma/supprimer_facture.php');
         
         req.addEventListener('load', () => {
             if (req.status >= 200 && req.status < 400) {
@@ -214,6 +216,23 @@ export default function GestionFactures(props) {
 
     const fermerModalConfirmation = () => {
         setModalConfirmation(false);
+    }
+
+    const extraireCode = (designation) => {
+        const codes = ['RX', 'LAB', 'MA', 'MED', 'CHR', 'CO', 'UPEC', 'SP', 'CA'];
+        let designation_extrait = '';
+        
+        codes.forEach(item => {
+            if(designation.toUpperCase().indexOf(item) === 0) {
+                designation_extrait =  designation.slice(item.length + 1);
+            } else if (designation.toUpperCase().indexOf('ECHO') === 0)  {
+                designation_extrait = designation;
+            }
+        });
+
+        if (designation_extrait === '') designation_extrait = designation;
+
+        return designation_extrait;
     }
 
     const mois = (str) => {
@@ -301,6 +320,8 @@ export default function GestionFactures(props) {
                     <div>
                         <div>Le <strong>{factureSelectionne.length > 0 && mois(factureSelectionne[0].date_heure.substring(0, 10))}</strong> à <strong>{factureSelectionne.length > 0 && factureSelectionne[0].date_heure.substring(11, )}</strong></div>
                     </div>
+                    <div style={{marginTop: 5}}>patient : <span style={{fontWeight: '600', marginTop: '15px'}}>{factureSelectionne.length > 0 && factureSelectionne[0].patient}</span></div>
+                    {factureSelectionne.length > 0 && factureSelectionne[0].assurance !== "aucune" ? <div>couvert par : <strong>{factureSelectionne[0].assurance.toUpperCase()}</strong></div> : null}
                     <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 20, width: '100%'}}>
                         <table style={table_styles}>
                             <thead>
@@ -310,7 +331,7 @@ export default function GestionFactures(props) {
                             <tbody>
                                 {detailsFacture.map(item => (
                                     <tr>
-                                        <td style={table_styles1}>{item.designation}</td>
+                                        <td style={table_styles1}>{extraireCode(item.designation)}</td>
                                         <td style={table_styles2}>{item.prix}</td>
                                     </tr>
                                 ))}
@@ -333,7 +354,9 @@ export default function GestionFactures(props) {
                             content={() => componentRef.current}
                         />
                     </div>
-                    <button style={{width: '20%', height: '5vh', marginLeft: '15px', backgroundColor: '#e14046'}} onClick={() => {if(detailsFacture.length > 0) setModalConfirmation(true)}}>Annuler</button>
+                    <div style={{display: ' none'}}>
+                        <button style={{width: '20%', height: '5vh', marginLeft: '15px', backgroundColor: '#e14046'}} onClick={() => {if(detailsFacture.length > 0) setModalConfirmation(true)}}>Annuler</button>
+                    </div>
                     </div>
                     <h3 style={{marginTop: 5}}>Régler la facture</h3>
                     {factureSelectionne.length > 0 && factureSelectionne[0].reste_a_payer > 0 ? (
@@ -368,6 +391,7 @@ export default function GestionFactures(props) {
                                 aPayer={factureSelectionne[0].a_payer}
                                 montantVerse={factureSelectionne[0].montant_verse}
                                 relicat={factureSelectionne[0].relicat}
+                                assurance={factureSelectionne[0].assurance}
                                 resteaPayer={factureSelectionne[0].reste_a_payer}
                                 date={factureSelectionne[0].date_heure}
                                 nomConnecte={factureSelectionne[0].caissier}

@@ -29,10 +29,27 @@ const table_styles = {
     padding: 10,
     width: '100%',
     marginTop: '15px',
-    fontSize: 11
+    fontSize: 8
 }
 
-export default class Facture extends Component {
+export default class ImprimerHistorique extends Component {
+
+    extraireCode = (designation) => {
+        const codes = ['RX', 'LAB', 'MA', 'MED', 'CHR', 'CO', 'UPEC', 'SP', 'CA'];
+        let designation_extrait = '';
+        
+        codes.forEach(item => {
+            if(designation.toUpperCase().indexOf(item) === 0) {
+                designation_extrait =  designation.slice(item.length + 1);
+            } else if (designation.toUpperCase().indexOf('ECHO') === 0)  {
+                designation_extrait = designation;
+            }
+        });
+
+        if (designation_extrait === '') designation_extrait = designation;
+
+        return designation_extrait;
+    }
     
     mois = (str) => {
 
@@ -66,7 +83,7 @@ export default class Facture extends Component {
 
     render() {
         return (
-            <div style={{backgroundColor: '#f1f1f1', height: '100vh', marginTop: '80px'}}>
+            <div style={{backgroundColor: '#f1f1f1', height: '100vh', marginTop: '70px'}}>
                 <div style={{textTransform: 'uppercase', padding: '15px 135px', fontSize: 7, marginBottom: '12px', width: '100%', display: 'flex', justifyContent: 'space-between'}}>
                     <div style={{ lineHeight: '20px'}}>
                         <div style={{color: 'black', borderBottom: '1px dotted #000'}}><strong>Republique du Cameroun <br/><em style={{textTransform: 'capitalize'}}>Paix-Travail-Patrie</em></strong></div>
@@ -83,32 +100,27 @@ export default class Facture extends Component {
                         <div style={{color: 'black',}}><strong>Bepanda CMA</strong></div> 
                     </div>
                 </div>
-                <div style={{fontSize: 16, display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: '10px',}}>
+                <div style={{fontSize: 9, display: 'flex', justifyContent: 'center', alignItems: 'center', paddingTop: '10px',}}>
                     <div style={{textAlign: 'center', width: '410px'}}>
                         <div style={{marginTop: 5}}>Fiche de recette du <span style={{fontWeight: '600', marginTop: '15px'}}>{this.props.infoRecette ? this.mois(this.props.infoRecette[0].date_heure.substring(0, 11)) : (this.mois(new Date().toLocaleDateString()) + ' ')} à {this.props.infoRecette ? this.props.infoRecette[0].date_heure.substring(11,) : (' ' + new Date().getHours() + 'h' + new Date().getMinutes() + 'min')}</span></div>
-                        <div style={{textAlign: 'center', marginBottom: 20}}>
+                        <div style={{textAlign: 'center', marginBottom: 15}}>
                             <table style={table_styles}>
                                 <thead>
-                                    <th style={table_styles1}>Services</th>
+                                    <th style={table_styles1}>Actes</th>
                                     <th style={table_styles2}>Recettes</th>
                                 </thead>
                                 <tbody>
-                                    {this.props.services ? this.props.services.map(item => (
+                                    {this.props.historique.length > 0  ? this.props.historique.map(item => (
                                         <tr>
-                                            <td style={table_styles1}>{item.service}</td>
-                                            <td style={table_styles2}>{item.recetteRestante}</td>
+                                            <td style={table_styles1}>{this.extraireCode(item.designation)}</td>
+                                            <td style={table_styles2}>{item.prix_total}</td>
                                         </tr>
-                                    )) : this.props.detailsRecette.map(item => (
-                                        <tr>
-                                            <td style={table_styles1}>{item.categorie}</td>
-                                            <td style={table_styles2}>{item.recette_restante}</td>
-                                        </tr>
-                                    ))
+                                    )) : null
                                     }
                                 </tbody>
                             </table>
                         </div>
-                        <div style={{marginTop: 15}}>Recette totale : <strong>{this.props.infoRecette ? this.props.infoRecette[0].recette_restante + ' Fcfa' : this.props.recetteTotal + ' Fcfa'}</strong></div>
+                        <div style={{marginTop: 5}}>Recette totale : <strong>{this.props.total ? this.props.total+ ' Fcfa' : 0 + ' Fcfa'}</strong></div>
                     </div>
                 </div>
             </div>    

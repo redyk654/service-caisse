@@ -28,7 +28,7 @@ export default function Historique(props) {
         }
 
         const req = new XMLHttpRequest();
-        req.open('GET', `http://localhost/backend-cma/recuperer_services_fait.php?date=${date}`);
+        req.open('GET', `http://192.168.1.101/backend-cma/recuperer_services_fait.php?date=${date}`);
 
         req.addEventListener('load', () => {
             const result = JSON.parse(req.responseText);
@@ -36,7 +36,7 @@ export default function Historique(props) {
             console.log(result);
             stopChargement();
             const req2 = new XMLHttpRequest();
-            req2.open('GET', `http://localhost/backend-cma/recuperer_services_fait.php?date=${date}&recette=oui`);
+            req2.open('GET', `http://192.168.1.101/backend-cma/recuperer_services_fait.php?date=${date}&recette=oui`);
             req2.onload = () => {setRecetteTotal(JSON.parse(req2.responseText)[0].recette);}
             req2.send();
 
@@ -83,6 +83,23 @@ export default function Historique(props) {
         }
     }
 
+    const extraireCode = (designation) => {
+        const codes = ['RX', 'LAB', 'MA', 'MED', 'CHR', 'CO', 'UPEC', 'SP', 'CA'];
+        let designation_extrait = '';
+        
+        codes.forEach(item => {
+            if(designation.toUpperCase().indexOf(item) === 0) {
+                designation_extrait =  designation.slice(item.length + 1);
+            } else if (designation.toUpperCase().indexOf('ECHO') === 0)  {
+                designation_extrait = designation;
+            }
+        });
+
+        if (designation_extrait === '') designation_extrait = designation;
+
+        return designation_extrait;
+    }
+
     return (
         <section className="historique">
             <h1>Historique des services médicaux</h1>
@@ -109,7 +126,7 @@ export default function Historique(props) {
                         <tbody>
                             {historique.length > 0 && historique.map(item => (
                                 <tr key={item.id}>
-                                    <td>{item.designation}</td>
+                                    <td>{extraireCode(item.designation)}</td>
                                     <td>{item.prix}</td>
                                     <td>{item.caissier}</td>
                                     <td>{mois(item.date_fait)}</td>

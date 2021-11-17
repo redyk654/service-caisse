@@ -52,12 +52,12 @@ export default function Comptes(props) {
         // Récupération des comptes
 
         const req = new XMLHttpRequest();
-        req.open('GET', 'http://localhost/backend-cma/recuperer_caissier.php');
+        req.open('GET', 'http://192.168.1.101/backend-cma/recuperer_caissier.php');
 
         req.addEventListener('load', () => {
             if(req.status >= 200 && req.status < 400) {
                 let result = JSON.parse(req.responseText);
-                result = result.filter(item => (item.nom_user != props.nomConnecte))
+                result = result.filter(item => (item.rol === "caissier"))
                 setListeComptes(result);
             }
         });
@@ -98,6 +98,7 @@ export default function Comptes(props) {
                             <option value="admin">admin</option>
                             <option value="caissier">caissier</option>
                             <option value="regisseur">regisseur</option>
+                            <option value="secretaire">sécrétaire</option>
                         </select>
                     </p>
                 </div>
